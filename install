@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ===================================================================
-# Installer Bot Telegram PPOB v3 (Final - Perbaikan DB)
-# Fitur: Pembersihan, Impor DB Otomatis, Perintah DB Modern
+# Installer Bot Telegram PPOB v6 (Paling Stabil)
+# Fitur: Pembersihan Total, Impor DB, & Perbaikan Skema Tabel Otomatis
 # ===================================================================
 
 # Warna
@@ -25,27 +25,20 @@ INSTALL_DIR="/opt/bot_ppob"
 SERVICE_NAME="bot-ppob.service"
 
 # Fungsi pengecekan root
-check_root() {
-    if [[ "${EUID}" -ne 0 ]]; then
-        echo -e "${RED}Error: Skrip ini harus dijalankan sebagai root.${NC}"
-        exit 1
-    fi
-}
+check_root() { if [[ "${EUID}" -ne 0 ]]; then echo -e "${RED}Error: Jalankan sebagai root.${NC}"; exit 1; fi }
 
 # Fungsi Membersihkan instalasi lama
 cleanup_previous_installation() {
-    echo -e "\n${YELLOW}--> Memeriksa dan membersihkan instalasi sebelumnya...${NC}"
-    if systemctl is-active --quiet $SERVICE_NAME; then
-        systemctl stop $SERVICE_NAME
-    fi
-    if systemctl is-enabled --quiet $SERVICE_NAME; then
-        systemctl disable $SERVICE_NAME
-    fi
+    echo -e "\n${YELLOW}--> Membersihkan instalasi sebelumnya secara total...${NC}"
+    systemctl stop $SERVICE_NAME >/dev/null 2>&1
+    systemctl disable $SERVICE_NAME >/dev/null 2>&1
     rm -f /etc/systemd/system/$SERVICE_NAME
     systemctl daemon-reload
-    if [ -d "$INSTALL_DIR" ]; then
-        rm -rf $INSTALL_DIR
-    fi
+    rm -rf $INSTALL_DIR
+    echo "--> Menghapus total MariaDB..."
+    apt-get purge -y mariadb-server mariadb-client mariadb-common >/dev/null 2>&1
+    rm -rf /var/lib/mysql /etc/mysql
+    apt-get autoremove -y >/dev/null 2>&1
     echo -e "${GREEN}--> Pembersihan selesai.${NC}"
 }
 
@@ -53,56 +46,33 @@ cleanup_previous_installation() {
 get_telegram_input() {
     echo -e "${YELLOW}===== Konfigurasi Wajib Bot Telegram =====${NC}"
     read -p "Masukkan BOT_TOKEN Anda: " BOT_TOKEN
-    while [ -z "$BOT_TOKEN" ]; do
-        echo -e "${RED}BOT_TOKEN tidak boleh kosong.${NC}"
-        read -p "Masukkan BOT_TOKEN Anda: " BOT_TOKEN
-    done
     read -p "Masukkan ADMIN_TELEGRAM_ID Anda: " ADMIN_TELEGRAM_ID
-    while [ -z "$ADMIN_TELEGRAM_ID" ]; do
-        echo -e "${RED}ADMIN_TELEGRAM_ID tidak boleh kosong.${NC}"
-        read -p "Masukkan ADMIN_TELEGRAM_ID Anda: " ADMIN_TELEGRAM_ID
-    done
 }
 
 # Fungsi instalasi dependensi
 install_dependencies() {
-    echo -e "\n${GREEN}--> Mengupdate sistem dan menginstal dependensi...${NC}"
+    echo -e "\n${GREEN}--> Menginstal dependensi...${NC}"
     apt-get update > /dev/null 2>&1
     apt-get install -y python3-pip python3-venv mariadb-server git curl > /dev/null 2>&1
-    echo -e "${GREEN}--> Dependensi sistem berhasil diinstal.${NC}"
 }
 
-# --- FUNGSI DATABASE YANG DIPERBAIKI ---
+# Fungsi setup database
 setup_database() {
-    echo -e "\n${GREEN}--> Menjalankan dan mengkonfigurasi MariaDB...${NC}"
+    echo -e "\n${GREEN}--> Mengkonfigurasi MariaDB...${NC}"
     systemctl start mariadb
     systemctl enable mariadb
-    
-    # Perintah modern untuk mengatur password root
-    mariadb -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$DB_ROOT_PASSWORD';"
-    mariadb -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
-    mariadb -e "DELETE FROM mysql.user WHERE User='';"
-    mariadb -e "DROP DATABASE IF EXISTS test;"
-    mariadb -e "FLUSH PRIVILEGES;"
-    
-    echo -e "\n${GREEN}--> Membuat database dan user untuk bot (menghapus yang lama jika ada)...${NC}"
-    # Hapus database dan user lama untuk memastikan instalasi bersih
-    mariadb -u root -p"$DB_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $DB_NAME;"
-    mariadb -u root -p"$DB_ROOT_PASSWORD" -e "DROP USER IF EXISTS '$DB_USER'@'localhost';"
-    
-    # Buat yang baru
-    mariadb -u root -p"$DB_ROOT_PASSWORD" -e "CREATE DATABASE $DB_NAME;"
-    mariadb -u root -p"$DB_ROOT_PASSWORD" -e "CREATE USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';"
-    mariadb -u root -p"$DB_ROOT_PASSWORD" -e "GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';"
-    mariadb -u root -p"$DB_ROOT_PASSWORD" -e "FLUSH PRIVILEGES;"
-    echo -e "${GREEN}--> Database '$DB_NAME' dan user '$DB_USER' berhasil dibuat.${NC}"
+    sudo mariadb -e "CREATE DATABASE IF NOT EXISTS $DB_NAME;"
+    sudo mariadb -e "CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';"
+    sudo mariadb -e "GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';"
+    sudo mariadb -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$DB_ROOT_PASSWORD';"
+    sudo mariadb -e "FLUSH PRIVILEGES;"
+    echo -e "${GREEN}--> Database dan user berhasil dikonfigurasi.${NC}"
 }
 
 # Fungsi untuk clone repo dan konfigurasi
 clone_and_configure() {
-    echo -e "\n${GREEN}--> Mengkloning repositori dari GitHub ke $INSTALL_DIR...${NC}"
+    echo -e "\n${GREEN}--> Mengkloning repositori dari GitHub...${NC}"
     git clone $REPO_URL $INSTALL_DIR
-    
     echo -e "\n${GREEN}--> Membuat file config.py...${NC}"
     cat << EOF > "$INSTALL_DIR/config.py"
 BOT_TOKEN = "$BOT_TOKEN"
@@ -113,33 +83,36 @@ DB_USER = '$DB_USER'
 DB_PASSWORD = '$DB_PASSWORD'
 DB_NAME = '$DB_NAME'
 EOF
-
     echo -e "\n${GREEN}--> Menginstal library Python...${NC}"
     python3 -m venv "$INSTALL_DIR/venv"
     "$INSTALL_DIR/venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt" > /dev/null 2>&1
-    echo -e "${GREEN}--> Library Python berhasil diinstal.${NC}"
 }
 
-# Fungsi Impor data dari file .sql
+# --- FUNGSI IMPOR DATABASE YANG DISEMPURNAKAN ---
 import_database_data() {
     DB_SQL_FILE="$INSTALL_DIR/cekotmyi_ppob.sql"
     if [ -f "$DB_SQL_FILE" ]; then
-        echo -e "\n${GREEN}--> File 'cekotmyi_ppob.sql' ditemukan, mengimpor data...${NC}"
+        echo -e "\n${GREEN}--> Mengimpor data dari 'cekotmyi_ppob.sql'...${NC}"
         mariadb -u root -p"$DB_ROOT_PASSWORD" "$DB_NAME" < "$DB_SQL_FILE"
         echo -e "${GREEN}--> Data database berhasil diimpor.${NC}"
+
+        # --- PERBAIKAN: Tambahkan kolom yang hilang setelah impor ---
+        echo -e "\n${YELLOW}--> Memperbarui struktur tabel 'users' untuk menambahkan kolom 'telegram_user_id'...${NC}"
+        mariadb -u root -p"$DB_ROOT_PASSWORD" "$DB_NAME" -e "ALTER TABLE users ADD COLUMN IF NOT EXISTS telegram_user_id BIGINT UNIQUE AFTER id;"
+        echo -e "${GREEN}--> Struktur tabel 'users' berhasil diperbarui.${NC}"
+        # --------------------------------------------------------
     else
-        echo -e "\n${YELLOW}--> PERINGATAN: File 'cekotmyi_ppob.sql' tidak ditemukan di repositori.${NC}"
+        echo -e "\n${YELLOW}--> PERINGATAN: File 'cekotmyi_ppob.sql' tidak ditemukan.${NC}"
     fi
 }
 
 # Fungsi membuat layanan systemd
 create_systemd_service() {
-    echo -e "\n${GREEN}--> Membuat layanan systemd ($SERVICE_NAME)...${NC}"
+    echo -e "\n${GREEN}--> Membuat layanan systemd...${NC}"
     cat << EOF > /etc/systemd/system/$SERVICE_NAME
 [Unit]
-Description=Bot PPOB Telegram Service
+Description=Bot PPOB Service
 After=network.target mariadb.service
-
 [Service]
 User=root
 Group=root
@@ -147,12 +120,9 @@ WorkingDirectory=$INSTALL_DIR
 ExecStart=$INSTALL_DIR/venv/bin/python3 main.py
 Restart=always
 RestartSec=5
-
 [Install]
 WantedBy=multi-user.target
 EOF
-
-    echo -e "\n${GREEN}--> Menjalankan dan mengaktifkan layanan bot...${NC}"
     systemctl daemon-reload
     systemctl enable $SERVICE_NAME
     systemctl start $SERVICE_NAME
@@ -163,7 +133,6 @@ main() {
     check_root
     cleanup_previous_installation
     get_telegram_input
-    
     echo -e "${YELLOW}Memulai instalasi Bot PPOB...${NC}"
     install_dependencies
     setup_database
@@ -171,14 +140,13 @@ main() {
     import_database_data
     create_systemd_service
     
-    echo -e "\n\n${GREEN}=================================================================${NC}"
+    echo -e "\n\n${GREEN}=====================================================${NC}"
     echo -e "${GREEN}      ✅ Instalasi Bot PPOB Selesai!${NC}"
-    echo -e "${GREEN}=================================================================${NC}"
-    echo -e "\nLayanan bot sekarang berjalan dengan nama ${YELLOW}$SERVICE_NAME${NC}"
-    echo -e "Untuk mengecek status: ${YELLOW}systemctl status $SERVICE_NAME${NC}"
-    echo -e "Untuk melihat log: ${YELLOW}journalctl -u $SERVICE_NAME -f${NC}"
-    echo -e "\n${YELLOW}Password root untuk MariaDB Anda (SIMPAN DI TEMPAT AMAN):${NC}"
-    echo -e "--> ${DB_ROOT_PASSWORD}"
+    echo -e "${GREEN}=====================================================${NC}"
+    echo -e "Layanan bot berjalan: ${YELLOW}$SERVICE_NAME${NC}"
+    echo -e "Cek status: ${YELLOW}systemctl status $SERVICE_NAME${NC}"
+    echo -e "Lihat log: ${YELLOW}journalctl -u $SERVICE_NAME -f${NC}"
+    echo -e "\n${YELLOW}Password root MariaDB (SIMPAN!): ${NC}${DB_ROOT_PASSWORD}"
     echo ""
 }
 
