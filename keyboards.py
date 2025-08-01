@@ -22,6 +22,9 @@ def panel_xl_keyboard():
         ],
         [
             InlineKeyboardButton("🚪 Keluar / Ganti Nomor", callback_data="panel_logout")
+        ],
+        [
+            InlineKeyboardButton("⬅️ Kembali ke Menu Utama", callback_data="main_menu")
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
