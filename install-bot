@@ -2,7 +2,7 @@
 
 # ===================================================================
 # Installer Final Bot XL (berdasarkan skrip botxlx_fixed.py)
-# Versi: GitHub, Interaktif, Auto-Running
+# Versi: GitHub, Interaktif, Auto-Running, dengan Cleanup
 # ===================================================================
 
 # Warna
@@ -24,18 +24,23 @@ check_root() {
     fi
 }
 
-# Fungsi Membersihkan instalasi lama
+# --- FUNGSI BARU: Membersihkan instalasi lama ---
 cleanup_previous_installation() {
-    echo -e "\n${YELLOW}--> Membersihkan instalasi sebelumnya...${NC}"
+    echo -e "\n${YELLOW}--> Memeriksa dan membersihkan instalasi sebelumnya...${NC}"
+    # Hentikan dan nonaktifkan layanan jika ada
     if systemctl is-active --quiet $SERVICE_NAME; then
-        echo "--> Menghentikan layanan '$SERVICE_NAME'..."
+        echo "--> Menghentikan layanan '$SERVICE_NAME' yang sedang berjalan."
         systemctl stop $SERVICE_NAME
     fi
     if systemctl is-enabled --quiet $SERVICE_NAME; then
         systemctl disable $SERVICE_NAME
     fi
+    
+    # Hapus file service lama
     rm -f /etc/systemd/system/$SERVICE_NAME
     systemctl daemon-reload
+
+    # Hapus direktori instalasi lama
     if [ -d "$INSTALL_DIR" ]; then
         echo "--> Menghapus direktori instalasi lama: $INSTALL_DIR"
         rm -rf $INSTALL_DIR
@@ -54,7 +59,6 @@ get_telegram_input() {
 install_dependencies() {
     echo -e "\n${GREEN}--> Mengupdate sistem dan menginstal dependensi...${NC}"
     apt-get update > /dev/null 2>&1
-    # MariaDB tidak lagi diinstal karena bot baru menggunakan SQLite
     apt-get install -y python3-pip python3-venv git curl > /dev/null 2>&1
     echo -e "${GREEN}--> Dependensi sistem berhasil diinstal.${NC}"
 }
@@ -66,7 +70,6 @@ setup_project() {
     
     echo -e "\n${GREEN}--> Membuat virtual environment dan menginstal library Python...${NC}"
     python3 -m venv "$INSTALL_DIR/venv"
-    # Menginstal library yang dibutuhkan oleh skrip baru
     "$INSTALL_DIR/venv/bin/pip" install "python-telegram-bot[job-queue]" requests > /dev/null 2>&1
     echo -e "${GREEN}--> Library Python berhasil diinstal.${NC}"
 }
@@ -76,11 +79,11 @@ create_run_script() {
     echo -e "\n${GREEN}--> Membuat skrip 'run.sh' dengan semua konfigurasi...${NC}"
     
     # Kredensial hardcoded dari skrip teman Anda
-    XL_API_KEY="c7d49152-51a3-4cf4-b696-af8bd60ad2d8"
+    XL_API_KEY="e6ee99e0-c853-45fb-b1fc-d8cd8a6da062"
     HESDA_API_KEY="2iB0Qvvqaw85lCOvCy"
-    HESDA_USERNAME="ikbal192817@gmail.com"
+    HESDA_USERNAME="hokagelegend9999@gmail.com"
     HESDA_PASSWORD="ayomasuk123"
-    ADMIN_USERNAME_FALLBACK="NIZAM_AKUN"
+    ADMIN_USERNAME_FALLBACK="hokagelegend1"
     QRIS_STATIS="00020101021226610016ID.CO.SHOPEE.WWW01189360091800221899870208221899870303UMI51440014ID.CO.QRIS.WWW0215ID10254101517530303UMI5204541153033605405125005802ID5909IST STORE6006SERANG61054211162070703A016304428D"
 
     cat << EOF > "$INSTALL_DIR/run.sh"
@@ -109,8 +112,8 @@ EOF
     echo -e "${GREEN}--> Skrip 'run.sh' berhasil dibuat.${NC}"
 }
 
-# Fungsi membuat layanan systemd
-create_systemd_service() {
+# --- FUNGSI BARU: Membuat dan menjalankan layanan systemd ---
+create_and_run_systemd_service() {
     echo -e "\n${GREEN}--> Membuat layanan systemd ($SERVICE_NAME)...${NC}"
     cat << EOF > /etc/systemd/system/$SERVICE_NAME
 [Unit]
@@ -138,20 +141,20 @@ EOF
 # --- Fungsi Utama ---
 main() {
     check_root
-    cleanup_previous_installation
+    cleanup_previous_installation # Tambahan
     get_telegram_input
     
     echo -e "\n${YELLOW}Memulai instalasi Bot PPOB final...${NC}"
     install_dependencies
     setup_project
     create_run_script
-    create_systemd_service
+    create_and_run_systemd_service # Tambahan
     
     echo -e "\n\n${GREEN}=====================================================${NC}"
     echo -e "${GREEN}      ✅ Instalasi Bot Selesai!${NC}"
     echo -e "${GREEN}=====================================================${NC}"
-    echo -e "Layanan bot sekarang berjalan dengan nama ${YELLOW}$SERVICE_NAME${NC}"
-    echo -e "Database SQLite akan dibuat otomatis dengan nama ${YELLOW}bot_database.sqlite${NC} di dalam folder ${YELLOW}$INSTALL_DIR${NC}"
+    echo -e "Layanan bot sekarang ${GREEN}sudah berjalan${NC} dengan nama ${YELLOW}$SERVICE_NAME${NC}"
+    echo -e "Database SQLite akan dibuat otomatis di folder ${YELLOW}$INSTALL_DIR${NC}"
     echo -e "\nUntuk mengecek status: ${YELLOW}systemctl status $SERVICE_NAME${NC}"
     echo -e "Untuk melihat log: ${YELLOW}journalctl -u $SERVICE_NAME -f${NC}"
     echo ""
