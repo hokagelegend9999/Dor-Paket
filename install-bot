@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # ===================================================================
-# Installer Final Bot XL (berdasarkan skrip botxlx_fixed.py)
-# Versi: GitHub, Interaktif, Auto-Running, dengan Cleanup
+# Installer Final Bot XL (Perbaikan Interaktif API Key)
 # ===================================================================
 
 # Warna
@@ -24,62 +23,53 @@ check_root() {
     fi
 }
 
-# --- FUNGSI BARU: Membersihkan instalasi lama ---
+# Fungsi Membersihkan instalasi lama
 cleanup_previous_installation() {
-    echo -e "\n${YELLOW}--> Memeriksa dan membersihkan instalasi sebelumnya...${NC}"
-    # Hentikan dan nonaktifkan layanan jika ada
+    echo -e "\n${YELLOW}--> Membersihkan instalasi sebelumnya...${NC}"
     if systemctl is-active --quiet $SERVICE_NAME; then
-        echo "--> Menghentikan layanan '$SERVICE_NAME' yang sedang berjalan."
         systemctl stop $SERVICE_NAME
     fi
     if systemctl is-enabled --quiet $SERVICE_NAME; then
         systemctl disable $SERVICE_NAME
     fi
-    
-    # Hapus file service lama
     rm -f /etc/systemd/system/$SERVICE_NAME
     systemctl daemon-reload
-
-    # Hapus direktori instalasi lama
     if [ -d "$INSTALL_DIR" ]; then
-        echo "--> Menghapus direktori instalasi lama: $INSTALL_DIR"
         rm -rf $INSTALL_DIR
     fi
     echo -e "${GREEN}--> Pembersihan selesai.${NC}"
 }
 
-# Fungsi untuk mendapatkan input Telegram
-get_telegram_input() {
-    echo -e "${YELLOW}===== Konfigurasi Wajib Bot Telegram =====${NC}"
+# --- FUNGSI INPUT YANG DIPERBARUI ---
+get_user_input() {
+    echo -e "${YELLOW}===== Konfigurasi Bot & API =====${NC}"
     read -p "Masukkan BOT_TOKEN Anda: " BOT_TOKEN
     read -p "Masukkan ADMIN_TELEGRAM_ID Anda: " ADMIN_TELEGRAM_ID
+    read -p "Masukkan KMSP_API_KEY (XL_API_KEY) Anda: " KMSP_API_KEY
 }
 
 # Fungsi instalasi dependensi
 install_dependencies() {
-    echo -e "\n${GREEN}--> Mengupdate sistem dan menginstal dependensi...${NC}"
+    echo -e "\n${GREEN}--> Menginstal dependensi...${NC}"
     apt-get update > /dev/null 2>&1
     apt-get install -y python3-pip python3-venv git curl > /dev/null 2>&1
-    echo -e "${GREEN}--> Dependensi sistem berhasil diinstal.${NC}"
 }
 
 # Fungsi untuk clone repo dan konfigurasi
 setup_project() {
-    echo -e "\n${GREEN}--> Mengkloning repositori dari GitHub ke $INSTALL_DIR...${NC}"
+    echo -e "\n${GREEN}--> Mengkloning repositori dari GitHub...${NC}"
     git clone $REPO_URL $INSTALL_DIR
     
-    echo -e "\n${GREEN}--> Membuat virtual environment dan menginstal library Python...${NC}"
+    echo -e "\n${GREEN}--> Menginstal library Python...${NC}"
     python3 -m venv "$INSTALL_DIR/venv"
     "$INSTALL_DIR/venv/bin/pip" install "python-telegram-bot[job-queue]" requests > /dev/null 2>&1
-    echo -e "${GREEN}--> Library Python berhasil diinstal.${NC}"
 }
 
-# Fungsi untuk membuat skrip 'run.sh' yang berisi semua konfigurasi
+# --- SKRIP RUN YANG DIPERBARUI ---
 create_run_script() {
-    echo -e "\n${GREEN}--> Membuat skrip 'run.sh' dengan semua konfigurasi...${NC}"
+    echo -e "\n${GREEN}--> Membuat skrip 'run.sh' dengan konfigurasi Anda...${NC}"
     
-    # Kredensial hardcoded dari skrip teman Anda
-    XL_API_KEY="e6ee99e0-c853-45fb-b1fc-d8cd8a6da062"
+    # Kredensial lain tetap hardcoded sesuai skrip asli
     HESDA_API_KEY="2iB0Qvvqaw85lCOvCy"
     HESDA_USERNAME="hokagelegend9999@gmail.com"
     HESDA_PASSWORD="ayomasuk123"
@@ -95,7 +85,7 @@ source "$INSTALL_DIR/venv/bin/activate"
 # Mengatur environment variables untuk bot
 export BOT_TOKEN="$BOT_TOKEN"
 export ADMIN_TELEGRAM_ID="$ADMIN_TELEGRAM_ID"
-export XL_API_KEY="$XL_API_KEY"
+export XL_API_KEY="$KMSP_API_KEY" # Menggunakan API Key dari input Anda
 export HESDA_API_KEY="$HESDA_API_KEY"
 export HESDA_USERNAME="$HESDA_USERNAME"
 export HESDA_PASSWORD="$HESDA_PASSWORD"
@@ -107,14 +97,12 @@ echo "Menjalankan bot dari run.sh..."
 python3 "$INSTALL_DIR/botxlx_fixed.py"
 EOF
 
-    # Memberikan izin eksekusi pada run.sh
     chmod +x "$INSTALL_DIR/run.sh"
-    echo -e "${GREEN}--> Skrip 'run.sh' berhasil dibuat.${NC}"
 }
 
-# --- FUNGSI BARU: Membuat dan menjalankan layanan systemd ---
-create_and_run_systemd_service() {
-    echo -e "\n${GREEN}--> Membuat layanan systemd ($SERVICE_NAME)...${NC}"
+# Fungsi membuat layanan systemd
+create_systemd_service() {
+    echo -e "\n${GREEN}--> Membuat dan menjalankan layanan systemd ($SERVICE_NAME)...${NC}"
     cat << EOF > /etc/systemd/system/$SERVICE_NAME
 [Unit]
 Description=Bot Telegram PPOB (Final)
@@ -132,7 +120,6 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-    echo -e "\n${GREEN}--> Menjalankan dan mengaktifkan layanan bot...${NC}"
     systemctl daemon-reload
     systemctl enable $SERVICE_NAME
     systemctl start $SERVICE_NAME
@@ -141,20 +128,19 @@ EOF
 # --- Fungsi Utama ---
 main() {
     check_root
-    cleanup_previous_installation # Tambahan
-    get_telegram_input
+    cleanup_previous_installation
+    get_user_input
     
-    echo -e "\n${YELLOW}Memulai instalasi Bot PPOB final...${NC}"
+    echo -e "\n${YELLOW}Memulai instalasi Bot PPOB...${NC}"
     install_dependencies
     setup_project
     create_run_script
-    create_and_run_systemd_service # Tambahan
+    create_systemd_service
     
     echo -e "\n\n${GREEN}=====================================================${NC}"
     echo -e "${GREEN}      ✅ Instalasi Bot Selesai!${NC}"
     echo -e "${GREEN}=====================================================${NC}"
     echo -e "Layanan bot sekarang ${GREEN}sudah berjalan${NC} dengan nama ${YELLOW}$SERVICE_NAME${NC}"
-    echo -e "Database SQLite akan dibuat otomatis di folder ${YELLOW}$INSTALL_DIR${NC}"
     echo -e "\nUntuk mengecek status: ${YELLOW}systemctl status $SERVICE_NAME${NC}"
     echo -e "Untuk melihat log: ${YELLOW}journalctl -u $SERVICE_NAME -f${NC}"
     echo ""
