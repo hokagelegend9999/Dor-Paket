@@ -28,63 +28,63 @@ def inisialisasi_database():
     cursor = conn.cursor()
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY,
-        first_name TEXT,
-        username TEXT,
-        balance INTEGER DEFAULT 0,
-        transactions TEXT DEFAULT '[]',
-        is_admin INTEGER DEFAULT 0,
-        is_banned INTEGER DEFAULT 0,
-        phone_number TEXT
-    )
-    ''')
+        id INTEGER PRIMARY KEY, first_name TEXT, username TEXT,
+        balance INTEGER DEFAULT 0, accounts TEXT DEFAULT '{}',
+        transactions TEXT DEFAULT '[]', selected_hesdapkg_ids TEXT DEFAULT '[]',
+        selected_30h_pkg_ids TEXT DEFAULT '[]', is_admin INTEGER DEFAULT 0,
+        is_banned INTEGER DEFAULT 0, phone_number TEXT
+    )''')
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS custom_packages (
-        code TEXT PRIMARY KEY,
-        name TEXT,
-        price INTEGER,
-        description TEXT,
-        payment_methods TEXT,
-        ewallet_fee INTEGER DEFAULT 0
-    )
-    ''')
-    cursor.execute('''
-    CREATE TABLE IF NOT EXISTS settings (
-        key TEXT PRIMARY KEY,
-        value TEXT
-    )
-    ''')
-    
-                                                   
-    try:
-        cursor.execute("ALTER TABLE custom_packages ADD COLUMN ewallet_fee INTEGER DEFAULT 0")
-    except sqlite3.OperationalError:
-        pass                  
-
-    try:
-        cursor.execute("ALTER TABLE users ADD COLUMN phone_number TEXT")
-    except sqlite3.OperationalError:
-        pass                  
-
-                                                         
-    try:
-        cursor.execute("SELECT description FROM custom_packages LIMIT 1")
-    except sqlite3.OperationalError:
-        logging.info("Kolom 'description' tidak ditemukan di tabel custom_packages. Menambahkan...")
-        cursor.execute("ALTER TABLE custom_packages ADD COLUMN description TEXT DEFAULT ''")
-
-                                                             
-    try:
-        cursor.execute("SELECT payment_methods FROM custom_packages LIMIT 1")
-    except sqlite3.OperationalError:
-        logging.info("Kolom 'payment_methods' tidak ditemukan di tabel custom_packages. Menambahkan...")
-        cursor.execute("ALTER TABLE custom_packages ADD COLUMN payment_methods TEXT DEFAULT '[]'")
-                                 
-
+        code TEXT PRIMARY KEY, name TEXT, price INTEGER, description TEXT,
+        payment_methods TEXT, ewallet_fee INTEGER DEFAULT 0
+    )''')
+    cursor.execute('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)')
+    cursor.execute('CREATE TABLE IF NOT EXISTS blocked_users (user_id INTEGER PRIMARY KEY)')
     conn.commit()
     conn.close()
-    logging.info("Database SQLite berhasil diinisialisasi dan divalidasi.")
+    logging.info("Database SQLite berhasil diinisialisasi.")
 
+def simpan_data_ke_db():
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    for user_id_str, details in user_data["registered_users"].items():
+        cursor.execute('''
+        INSERT OR REPLACE INTO users (id, first_name, username, balance, accounts, transactions, selected_hesdapkg_ids, selected_30h_pkg_ids)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            int(user_id_str), details.get('first_name'), details.get('username'),
+            details.get('balance', 0), json.dumps(details.get('accounts', {})),
+            json.dumps(details.get('transactions', [])), json.dumps(details.get('selected_hesdapkg_ids', [])),
+            json.dumps(details.get('selected_30h_pkg_ids', []))
+        ))
+    cursor.execute("DELETE FROM blocked_users")
+    if user_data.get("blocked_users"):
+        cursor.executemany("INSERT INTO blocked_users (user_id) VALUES (?)", [(uid,) for uid in user_data["blocked_users"]])
+    conn.commit()
+    conn.close()
+    logging.info("Data berhasil disimpan ke SQLite.")
+
+def muat_data_dari_db():
+    global user_data
+    user_data = {"registered_users": {}, "blocked_users": [], "custom_packages": {}}
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    # PERBAIKAN: Menggunakan nama kolom yang benar ('id')
+    cursor.execute("SELECT id, first_name, username, balance, accounts, transactions, selected_hesdapkg_ids, selected_30h_pkg_ids FROM users")
+    for row in cursor.fetchall():
+        user_id_str = str(row[0])
+        user_data["registered_users"][user_id_str] = {
+            "first_name": row[1], "username": row[2], "balance": row[3],
+            "accounts": json.loads(row[4] or '{}'),
+            "transactions": json.loads(row[5] or '[]'),
+            "selected_hesdapkg_ids": json.loads(row[6] or '[]'),
+            "selected_30h_pkg_ids": json.loads(row[7] or '[]')
+        }
+    cursor.execute("SELECT user_id FROM blocked_users")
+    user_data["blocked_users"] = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    logging.info(f"Data dari SQLite berhasil dimuat. Total {len(user_data['registered_users'])} user.")
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO,
@@ -102,8 +102,8 @@ HESDA_USERNAME = os.getenv("HESDA_USERNAME", "ikbal192817@gmail.com")
 HESDA_PASSWORD = os.getenv("HESDA_PASSWORD", "ayomasuk123")
 
 
-ADMIN_ID = int(os.getenv("ADMIN_TELEGRAM_ID", "6738243352"))
-ADMIN_USERNAME = os.getenv("ADMIN_TELEGRAM_USERNAME", "LatsCore")
+ADMIN_ID = int(os.getenv("ADMIN_TELEGRAM_ID", "1469244768"))
+ADMIN_USERNAME = os.getenv("ADMIN_TELEGRAM_USERNAME", "hokagelegend1")
 QRIS_STATIS = os.getenv("QRIS_STATIS", "00020101021226610016ID.CO.SHOPEE.WWW01189360091800221899870208221899870303UMI51440014ID.CO.QRIS.WWW0215ID10254101517530303UMI5204541153033605405125005802ID5909IST STORE6006SERANG61054211162070703A016304428D")
 
 CUSTOM_PACKAGE_PRICES = {
@@ -1730,7 +1730,7 @@ async def send_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_str = f"{days}d:{hours}j:{minutes}m"
 
     stats_block = (
-         "✨ *WELCOME TO DOR XL IKS STORE * ✨\n\n"
+         "✨ *WELCOME TO DOR XL HOKAGE LEGEND STORE * ✨\n\n"
         f"👤 *Nama* : {user_first_name}\n"
         f"🆔 *ID User* : `{user_id}`\n"
         f"💰 *Saldo Anda* : `Rp{user_balance:,}`\n"
@@ -7779,7 +7779,11 @@ def main():
         sys.exit(1)
         
     app = ApplicationBuilder().token(BOT_TOKEN).build()
-
+# --- PERBAIKAN: Menambahkan error handler ---
+    async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+        logger.error(msg="Exception while handling an update:", exc_info=context.error)
+    app.add_error_handler(error_handler)
+    # ----------------------------------------
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("menu", start))
     app.add_handler(CommandHandler("admin", admin_menu))
