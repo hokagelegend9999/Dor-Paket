@@ -1,11 +1,9 @@
 # main.py
 import logging
 from telegram import Update
-# --- PERBAIKAN: Tambahkan ContextTypes di sini ---
 from telegram.ext import (
     Application, CommandHandler, CallbackQueryHandler, ContextTypes
 )
-# ----------------------------------------------
 import config
 import handlers
 import database
@@ -32,8 +30,16 @@ def main() -> None:
     application.add_handler(CommandHandler("menu", handlers.menu))
     application.add_handler(CommandHandler("cancel", handlers.cancel))
 
-    # Daftarkan ConversationHandler untuk pembelian
+    # Daftarkan ConversationHandlers
     application.add_handler(handlers.purchase_xl_conv_handler)
+    application.add_handler(handlers.otp_login_conv_handler)
+    
+    # Daftarkan CallbackQueryHandlers untuk fitur panel
+    application.add_handler(CallbackQueryHandler(handlers.check_pulsa_handler, pattern='^panel_cek_pulsa$'))
+    application.add_handler(CallbackQueryHandler(handlers.check_lokasi_handler, pattern='^panel_cek_lokasi$'))
+    application.add_handler(CallbackQueryHandler(handlers.check_paket_handler, pattern='^panel_cek_paket$'))
+    application.add_handler(CallbackQueryHandler(handlers.logout_handler, pattern='^panel_logout$'))
+    application.add_handler(CallbackQueryHandler(handlers.unreg_paket_handler, pattern='^unreg_'))
     
     # Daftarkan handler umum untuk tombol menu (harus di akhir)
     application.add_handler(CallbackQueryHandler(handlers.route_handler))
