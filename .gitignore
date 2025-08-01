@@ -1,0 +1,12 @@
+# .gitignore
+
+# Abaikan file konfigurasi yang berisi data rahasia
+config.py
+
+# Abaikan direktori virtual environment
+venv/
+
+# Abaikan file cache Python
+__pycache__/
+*.pyc
+*.pyo
