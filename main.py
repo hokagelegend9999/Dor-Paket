@@ -1,9 +1,11 @@
 # main.py
 import logging
 from telegram import Update
+# --- PERBAIKAN: Tambahkan ContextTypes di sini ---
 from telegram.ext import (
-    Application, CommandHandler, CallbackQueryHandler,
+    Application, CommandHandler, CallbackQueryHandler, ContextTypes
 )
+# ----------------------------------------------
 import config
 import handlers
 import database
