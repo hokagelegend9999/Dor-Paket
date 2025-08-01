@@ -1721,8 +1721,7 @@ async def send_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     user_balance = user_data.get("registered_users", {}).get(str(user_id), {}).get("balance", 0)
     total_users = len(user_data.get("registered_users", {}))
-    successful_transactions = calculate_total_successful_transactions()
-
+    
     uptime_delta = datetime.now() - bot_start_time
     days = uptime_delta.days
     hours, remainder = divmod(uptime_delta.seconds, 3600)
@@ -1730,57 +1729,75 @@ async def send_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uptime_str = f"{days}d:{hours}j:{minutes}m"
 
     stats_block = (
-         "✨ *WELCOME TO DOR XL HOKAGE LEGEND STORE * ✨\n\n"
-        f"👤 *Nama* : {user_first_name}\n"
-        f"🆔 *ID User* : `{user_id}`\n"
-        f"💰 *Saldo Anda* : `Rp{user_balance:,}`\n"
-        f"📊 *Statistik Bot*\n"
-        f"👥 *Total Pengguna* : {total_users} user\n"
-        f"⏱️ *Uptime Bot* : {uptime_str}\n"
-        f"──────────────────────────\n\n"
-    )
-    original_welcome_block = (
-        "💵 *List harga sepaket*\n"
-        "• XUTS: Rp5.200\n" 
-        "• XCS ADDS-ON: Rp7.600 ( full add on)\n"
-        "• XUTP: Rp5.200\n\n"
-        "🔸*Harga satuan*🔸\n"
-        "• ADD ON: Rp200/add on\n" 
-        "• XC 1+1GB: Rp5000\n" 
-        "• XCP 8GB: Rp5000\n\n" 
-        "🔹*Paket lainya*🔹\n"
-        "• XL VIDIO: Rp5000\n"
-        "• XL IFLIX: Rp5000\n" 
-        "• *CEK MENU PAKET LAINYA*\n\n"        
-        "⛔ *Paket Unofficial (Tanpa Garansi)*\n\n"
-        "⚠️ *WAJIB CEK TUTORIAL BELI*\n"
-        "⚠️ *Cek Kuota terlebih dahulu!*\n"
-        "⚠️ *Hindari semua jenis kuota XTRA COMBO*.\n"
-        " *Unreg paket ini jika ada* ❌\n"
-        "- XTRA COMBO ❌\n"
-        "- XTRA COMBO VIP❌\n"
-        "- XTRA COMBO MINI ❌\n"
-        "- XTRA COMBO VIP PLUS ❌\n"
-        "- Pastikan semua langkah dilakukan dengan benar\n\n"
-        "Silakan pilih menu di bawah ini:"
+        "💜 D O R  X L  H O K A G E  L E G E N D  S T O R E 💜\n"
+        "╔══════════════════════════════╗\n"
+        f"║ 🪪 *Nama* : {user_first_name}\n"
+        f"║ 🆔 *ID User* : `{user_id}`\n"
+        f"║ 💰 *Saldo Anda* : `Rp{user_balance:,}`\n"
+        "╠══════════════════════════════╣\n"
+        "║ 📊 *S T A T I S T I K  B O T*\n"
+        "╠══════════════════════════════╣\n"
+        f"║ 👥 *Total Pengguna* : {total_users} user\n"
+        f"║ ⏱️ *Uptime Bot* : {uptime_str}\n"
+        "╚══════════════════════════════╝\n\n"
+        "🌸 *~ Selamat Berbelanja Di Hokage Legend ~* 🌸\n"
     )
 
+    original_welcome_block = (
+    "💜 *💠 D O R  X L  H O K A G E  P R I C E  L I S T 💠* 💜\n"
+    "╔══════════════════════════════╗\n"
+    "║ 🟣 *PAKET BUNDLING SPECIAL* 🟣\n"
+    "╠══════════════════════════════╣\n"
+    "║ • XUTS: Rp5.200\n"
+    "║ • XCS ADDS-ON: Rp7.600 (full add on)\n"
+    "║ • XUTP: Rp5.200\n"
+    "╠══════════════════════════════╣\n"
+    "║ 💜 *HARGA SATUAN* 💜\n"
+    "╠══════════════════════════════╣\n"
+    "║ • ADD ON: Rp200/add on\n"
+    "║ • XC 1+1GB: Rp5000\n"
+    "║ • XCP 8GB: Rp5000\n"
+    "╠══════════════════════════════╣\n"
+    "║ 🟣 *PAKET LAINNYA* 🟣\n"
+    "╠══════════════════════════════╣\n"
+    "║ • XL VIDIO: Rp5000\n"
+    "║ • XL IFLIX: Rp5000\n"
+    "║ • *CEK MENU PAKET LAINNYA*\n"
+    "╚══════════════════════════════╝\n\n"
+    "🟣 *⚠️  P E N T I N G  D I B A C A  ⚠️* 🟣\n"
+    "╔══════════════════════════════╗\n"
+    "║ ⛔ *Paket Unofficial (Tanpa Garansi)*\n"
+    "╠══════════════════════════════╣\n"
+    "║ ‼️ *WAJIB CEK TUTORIAL BELI*\n"
+    "║ ‼️ *Cek Kuota terlebih dahulu!*\n"
+    "║ ‼️ *Hindari semua jenis kuota XTRA COMBO*\n"
+    "║ ❌ *Unreg paket ini jika ada* ❌\n"
+    "╠══════════════════════════════╣\n"
+    "║ - XTRA COMBO ❌\n"
+    "║ - XTRA COMBO VIP ❌\n"
+    "║ - XTRA COMBO MINI ❌\n"
+    "║ - XTRA COMBO VIP PLUS ❌\n"
+    "╠══════════════════════════════╣\n"
+    "║ 💜 *Pastikan semua langkah dilakukan dengan benar* 💜\n"
+    "╚══════════════════════════════╝\n\n"
+    "🌸 *~ Silakan pilih menu di bawah ini ~* 🌸"
+)
     text = stats_block + original_welcome_block
     
     logging.info(f"Mengirim menu utama gabungan ke user {user_id}")
 
     keyboard = [
-        [InlineKeyboardButton("📩 LOGIN OTP", callback_data='show_login_options'),
-         InlineKeyboardButton("👥 NOMOR SAYA", callback_data="akun_saya")],
+        [InlineKeyboardButton("🔮 LOGIN OTP", callback_data='show_login_options'),
+         InlineKeyboardButton("🆔 NOMOR SAYA", callback_data="akun_saya")],
         [InlineKeyboardButton("⚡ Tembak Paket", callback_data='tembak_paket')],
-        [InlineKeyboardButton("📺 XL VIDIO", callback_data='vidio_xl_menu')],
-        [InlineKeyboardButton("🎬 XL IFLIX", callback_data='iflix_xl_menu')],
+        [InlineKeyboardButton("👾 XL VIDIO", callback_data='vidio_xl_menu'),
+         InlineKeyboardButton("🍇 XL IFLIX", callback_data='iflix_xl_menu')],
         [InlineKeyboardButton("📶 Cek Kuota", callback_data='cek_kuota'),
-         InlineKeyboardButton("💳 Cek Saldo", callback_data='cek_saldo')],
+         InlineKeyboardButton("💰 Cek Saldo", callback_data='cek_saldo')],
         [InlineKeyboardButton("📚 Tutorial Beli", callback_data='tutorial_beli'),
-         InlineKeyboardButton("⬆️ Top Up Saldo", callback_data='top_up_saldo')],
+         InlineKeyboardButton("💸 Top Up Saldo", callback_data='top_up_saldo')],
         [InlineKeyboardButton("📦 Paket Lainnya", callback_data='show_custom_packages')],
-        [InlineKeyboardButton("Kontak Admin", url=f"https://t.me/{ADMIN_USERNAME}")]
+        [InlineKeyboardButton("💜 Kontak Admin", url=f"https://t.me/{ADMIN_USERNAME}")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -1793,20 +1810,18 @@ async def send_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
         except Exception as e:
             logging.warning(f"Gagal mengedit pesan menu untuk user {user_id}: {e}. Mengirim pesan baru.")
-            msg = await context.bot.send_message(
+            await context.bot.send_message(
                 user_id,
                 text,
                 parse_mode="Markdown",
                 reply_markup=reply_markup
             )
-            bot_messages.setdefault(user_id, []).append(msg.message_id)
     else:
-        msg = await update.message.reply_text(
+        await update.message.reply_text(
             text,
             parse_mode="Markdown",
             reply_markup=reply_markup
         )
-        bot_messages.setdefault(user_id, []).append(msg.message_id)
 
 async def show_login_options_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -2045,6 +2060,8 @@ async def admin_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("➖ Kurangi Saldo", callback_data='admin_deduct_balance')
         ],
         [InlineKeyboardButton("💰 Cek Saldo User", callback_data='admin_check_user_balances')],
+        [InlineKeyboardButton("👥 Daftar User", callback_data='admin_list_users')],
+
         [
             InlineKeyboardButton("🚫 Blokir", callback_data='admin_block_user_menu'),
             InlineKeyboardButton("✅ Un-Blokir", callback_data='admin_unblock_user_menu')
@@ -2434,6 +2451,11 @@ async def admin_callback_handler(update: Update, context: ContextTypes.DEFAULT_T
         await admin_edit_custom_package_menu(update, context)
     elif data == 'admin_check_user_balances':
         await admin_check_user_balances(update, context, page=0)
+    elif data == 'admin_list_users':
+        await admin_list_users(update, context, page=0)
+    elif data.startswith('admin_list_users_page_'):
+        page = int(data.split('_')[-1])
+        await admin_list_users(update, context, page=page)
     elif data.startswith('admin_user_balance_page_'):
         page = int(data.split('_')[-1])
         await admin_check_user_balances(update, context, page=page)
@@ -7605,6 +7627,50 @@ async def admin_reject_user_top_up(update: Update, context: ContextTypes.DEFAULT
             
     await context.bot.send_message(user_to_affect_id, "❌ Maaf, permintaan top up Anda ditolak. Silakan hubungi admin untuk info lebih lanjut.")
     await query.edit_message_text(f"❌ Permintaan top up dari user `{user_to_affect_id}` telah ditolak.")
+async def admin_list_users(update: Update, context: ContextTypes.DEFAULT_TYPE, page: int = 0):
+    query = update.callback_query
+    await query.answer()
+
+    all_users = list(user_data.get("registered_users", {}).items())
+    
+    if not all_users:
+        await query.edit_message_text("Belum ada pengguna terdaftar.", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Kembali ke Menu Admin", callback_data="admin_back_to_menu")]]))
+        return
+
+    # Atur Paginasi
+    USERS_PER_PAGE = 10 # Anda bisa ubah angka ini
+    total_pages = math.ceil(len(all_users) / USERS_PER_PAGE)
+    start_index = page * USERS_PER_PAGE
+    end_index = start_index + USERS_PER_PAGE
+    paginated_users = all_users[start_index:end_index]
+
+    # Format Pesan
+    text = f"👥 *Daftar Pengguna Terdaftar (Halaman {page + 1}/{total_pages})*\n\n"
+    for i, (user_id, details) in enumerate(paginated_users, start=start_index + 1):
+        first_name = details.get('first_name', 'N/A')
+        username = details.get('username', 'N/A')
+        balance = details.get('balance', 0)
+        text += (
+            f"*{i}.* `{user_id}`\n"
+            f"   - Nama: {escape_markdown(first_name)}\n"
+            f"   - Username: @{username}\n"
+            f"   - Saldo: `Rp{balance:,}`\n\n"
+        )
+
+    # Buat Tombol Navigasi
+    keyboard = []
+    nav_buttons = []
+    if page > 0:
+        nav_buttons.append(InlineKeyboardButton("⏪ Sebelumnya", callback_data=f"admin_list_users_page_{page - 1}"))
+    if end_index < len(all_users):
+        nav_buttons.append(InlineKeyboardButton("Berikutnya ⏩", callback_data=f"admin_list_users_page_{page + 1}"))
+    
+    if nav_buttons:
+        keyboard.append(nav_buttons)
+    
+    keyboard.append([InlineKeyboardButton("🔙 Kembali ke Menu Admin", callback_data="admin_back_to_menu")])
+    
+    await query.edit_message_text(text, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(keyboard))
 
 async def akun_saya_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_access(update, context):
