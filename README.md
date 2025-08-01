@@ -12,7 +12,8 @@ chmod +x install
 ## INSTALL FIX LENGKAP
 
 ```
+rm install-bot
 wget https://github.com/hokagelegend9999/Dor-Paket/raw/refs/heads/main/install-bot
-chmod +x install
-./install
+chmod +x install-bot
+./install-bot
 ```
