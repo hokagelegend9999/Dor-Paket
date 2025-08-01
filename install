@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ===================================================================
-# Installer Bot Telegram PPOB v2 (Final)
-# Fitur: Pembersihan Otomatis & Impor DB dari GitHub
+# Installer Bot Telegram PPOB v3 (Final - Perbaikan DB)
+# Fitur: Pembersihan, Impor DB Otomatis, Perintah DB Modern
 # ===================================================================
 
 # Warna
@@ -16,7 +16,7 @@ KMSP_API_KEY="e6ee99e0-c853-45fb-b1fc-d8cd8a6da062"
 DB_NAME="cekotmyi_ppob"
 DB_USER="cekotmyi_ppob"
 DB_PASSWORD="1ndosaTaku"
-DB_ROOT_PASSWORD=$(openssl rand -base64 12) # Password root MariaDB dibuat acak
+DB_ROOT_PASSWORD=$(openssl rand -base64 12)
 # ---------------------------------------------------
 
 # Variabel Proyek
@@ -32,31 +32,24 @@ check_root() {
     fi
 }
 
-# --- FUNGSI BARU: Membersihkan instalasi lama ---
+# Fungsi Membersihkan instalasi lama
 cleanup_previous_installation() {
     echo -e "\n${YELLOW}--> Memeriksa dan membersihkan instalasi sebelumnya...${NC}"
-    # Hentikan dan nonaktifkan layanan jika ada
     if systemctl is-active --quiet $SERVICE_NAME; then
-        echo "--> Menghentikan layanan '$SERVICE_NAME' yang sedang berjalan."
         systemctl stop $SERVICE_NAME
     fi
     if systemctl is-enabled --quiet $SERVICE_NAME; then
         systemctl disable $SERVICE_NAME
     fi
-    
-    # Hapus file service lama
     rm -f /etc/systemd/system/$SERVICE_NAME
     systemctl daemon-reload
-
-    # Hapus direktori instalasi lama
     if [ -d "$INSTALL_DIR" ]; then
-        echo "--> Menghapus direktori instalasi lama: $INSTALL_DIR"
         rm -rf $INSTALL_DIR
     fi
     echo -e "${GREEN}--> Pembersihan selesai.${NC}"
 }
 
-# Fungsi untuk mendapatkan input Telegram dari pengguna
+# Fungsi untuk mendapatkan input Telegram
 get_telegram_input() {
     echo -e "${YELLOW}===== Konfigurasi Wajib Bot Telegram =====${NC}"
     read -p "Masukkan BOT_TOKEN Anda: " BOT_TOKEN
@@ -64,7 +57,6 @@ get_telegram_input() {
         echo -e "${RED}BOT_TOKEN tidak boleh kosong.${NC}"
         read -p "Masukkan BOT_TOKEN Anda: " BOT_TOKEN
     done
-    
     read -p "Masukkan ADMIN_TELEGRAM_ID Anda: " ADMIN_TELEGRAM_ID
     while [ -z "$ADMIN_TELEGRAM_ID" ]; do
         echo -e "${RED}ADMIN_TELEGRAM_ID tidak boleh kosong.${NC}"
@@ -80,17 +72,25 @@ install_dependencies() {
     echo -e "${GREEN}--> Dependensi sistem berhasil diinstal.${NC}"
 }
 
-# Fungsi setup database
+# --- FUNGSI DATABASE YANG DIPERBAIKI ---
 setup_database() {
-    echo -e "\n${GREEN}--> Menjalankan dan mengamankan MariaDB...${NC}"
+    echo -e "\n${GREEN}--> Menjalankan dan mengkonfigurasi MariaDB...${NC}"
     systemctl start mariadb
     systemctl enable mariadb
     
-    mariadb -e "UPDATE mysql.user SET Password = PASSWORD('$DB_ROOT_PASSWORD') WHERE User = 'root';"
+    # Perintah modern untuk mengatur password root
+    mariadb -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$DB_ROOT_PASSWORD';"
+    mariadb -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
     mariadb -e "DELETE FROM mysql.user WHERE User='';"
+    mariadb -e "DROP DATABASE IF EXISTS test;"
     mariadb -e "FLUSH PRIVILEGES;"
     
-    echo -e "\n${GREEN}--> Membuat database dan user untuk bot...${NC}"
+    echo -e "\n${GREEN}--> Membuat database dan user untuk bot (menghapus yang lama jika ada)...${NC}"
+    # Hapus database dan user lama untuk memastikan instalasi bersih
+    mariadb -u root -p"$DB_ROOT_PASSWORD" -e "DROP DATABASE IF EXISTS $DB_NAME;"
+    mariadb -u root -p"$DB_ROOT_PASSWORD" -e "DROP USER IF EXISTS '$DB_USER'@'localhost';"
+    
+    # Buat yang baru
     mariadb -u root -p"$DB_ROOT_PASSWORD" -e "CREATE DATABASE $DB_NAME;"
     mariadb -u root -p"$DB_ROOT_PASSWORD" -e "CREATE USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';"
     mariadb -u root -p"$DB_ROOT_PASSWORD" -e "GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';"
@@ -103,10 +103,8 @@ clone_and_configure() {
     echo -e "\n${GREEN}--> Mengkloning repositori dari GitHub ke $INSTALL_DIR...${NC}"
     git clone $REPO_URL $INSTALL_DIR
     
-    echo -e "\n${GREEN}--> Membuat file config.py dengan data Anda...${NC}"
+    echo -e "\n${GREEN}--> Membuat file config.py...${NC}"
     cat << EOF > "$INSTALL_DIR/config.py"
-# File ini dibuat otomatis oleh installer.
-
 BOT_TOKEN = "$BOT_TOKEN"
 ADMIN_TELEGRAM_ID = $ADMIN_TELEGRAM_ID
 KMSP_API_KEY = '$KMSP_API_KEY'
@@ -116,13 +114,13 @@ DB_PASSWORD = '$DB_PASSWORD'
 DB_NAME = '$DB_NAME'
 EOF
 
-    echo -e "\n${GREEN}--> Membuat virtual environment dan menginstal library Python...${NC}"
+    echo -e "\n${GREEN}--> Menginstal library Python...${NC}"
     python3 -m venv "$INSTALL_DIR/venv"
     "$INSTALL_DIR/venv/bin/pip" install -r "$INSTALL_DIR/requirements.txt" > /dev/null 2>&1
     echo -e "${GREEN}--> Library Python berhasil diinstal.${NC}"
 }
 
-# --- FUNGSI BARU: Impor data dari file .sql ---
+# Fungsi Impor data dari file .sql
 import_database_data() {
     DB_SQL_FILE="$INSTALL_DIR/cekotmyi_ppob.sql"
     if [ -f "$DB_SQL_FILE" ]; then
@@ -131,7 +129,6 @@ import_database_data() {
         echo -e "${GREEN}--> Data database berhasil diimpor.${NC}"
     else
         echo -e "\n${YELLOW}--> PERINGATAN: File 'cekotmyi_ppob.sql' tidak ditemukan di repositori.${NC}"
-        echo -e "${YELLOW}--> Database Anda kosong. Anda harus mengimpornya secara manual.${NC}"
     fi
 }
 
@@ -164,14 +161,14 @@ EOF
 # --- Fungsi Utama ---
 main() {
     check_root
-    cleanup_previous_installation # Tambahan
+    cleanup_previous_installation
     get_telegram_input
     
     echo -e "${YELLOW}Memulai instalasi Bot PPOB...${NC}"
     install_dependencies
     setup_database
     clone_and_configure
-    import_database_data # Tambahan
+    import_database_data
     create_systemd_service
     
     echo -e "\n\n${GREEN}=================================================================${NC}"
@@ -182,7 +179,6 @@ main() {
     echo -e "Untuk melihat log: ${YELLOW}journalctl -u $SERVICE_NAME -f${NC}"
     echo -e "\n${YELLOW}Password root untuk MariaDB Anda (SIMPAN DI TEMPAT AMAN):${NC}"
     echo -e "--> ${DB_ROOT_PASSWORD}"
-    echo -e "\nData database dari file 'cekotmyi_ppob.sql' telah diimpor secara otomatis."
     echo ""
 }
 
