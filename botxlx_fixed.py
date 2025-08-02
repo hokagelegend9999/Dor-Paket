@@ -19,7 +19,7 @@ import uuid
 import random
 import sqlite3
 bot_start_time = datetime.now()
-
+logger = logging.getLogger(__name__)
 DB_FILE = 'bot_database.sqlite'
 
 
@@ -1745,6 +1745,9 @@ async def send_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     original_welcome_block = (
     "💜 *💠 D O R  X L  H O K A G E  P R I C E  L I S T 💠* 💜\n"
+    "═════════════════════════════════\n"
+    "==== DEVELOPER SCRIPT BY : IKS STORE ====\n"
+    "═════════════════════════════════\n"
     "╔══════════════════════════════╗\n"
     "║ 🟣 *PAKET BUNDLING SPECIAL* 🟣\n"
     "╠══════════════════════════════╣\n"
@@ -1866,11 +1869,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if is_new_user:
         logging.info(f"User baru terdaftar: ID={user_id_str}, Nama={user_first_name}, Username=@{user_username}")
         admin_notification_text = (
-            f"🎉 *User Baru Terdaftar!* 🎉\n"
-            f"ID User: `{user_id_str}`\n"
-            f"Nama: `{user_first_name}`\n"
-            f"Username: `@{user_username}`\n"
-            f"Waktu: `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`"
+            f"✨ *💜 W E L C O M E • T O • V I P • M E M B E R 💜* ✨\n\n"
+            f"🆔 *ID User*: `{user_id_str}`\n"
+            f"👤 *Nama*: `{user_first_name}`\n"
+            f"🏷 *Username*: @{user_username}\n"
+            f"⏰ *Waktu Registrasi*: `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`\n\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"💜 *Status*: `AKTIF`\n"
+            f"💎 *Level*: `PREMIUM`\n"
+            f"🔮 *Expired*: `LIFETIME`\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"🎊 *Selamat bergabung di keluarga eksklusif kami!* 🎊\n"
+            f"⚡ Nikmati semua fitur premium kami!"
         )
         try:
             await context.bot.send_message(ADMIN_ID, admin_notification_text, parse_mode="Markdown")
